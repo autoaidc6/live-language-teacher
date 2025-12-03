@@ -49,9 +49,13 @@ const Visualizer: React.FC<VisualizerProps> = ({ level, isActive }) => {
         const x = centerX + (i * (width + spacing)) - (width / 2);
         const y = centerY - (height / 2);
         
-        // Rounded bars
+        // Rounded bars with fallback
         ctx.beginPath();
-        ctx.roundRect(x, y, width, height, 10);
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(x, y, width, height, 10);
+        } else {
+          ctx.rect(x, y, width, height);
+        }
         ctx.fill();
       }
 
