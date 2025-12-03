@@ -1,0 +1,7 @@
+{
+  "name": "LinguaFlow - AI Language Coach",
+  "description": "A real-time AI language tutor that helps you practice conversation, adapts to your skill level, and switches languages instantly.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
