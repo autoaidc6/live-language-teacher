@@ -7,7 +7,10 @@ export enum Language {
   JAPANESE = 'Japanese',
   CHINESE = 'Mandarin Chinese',
   KOREAN = 'Korean',
-  PORTUGUESE = 'Portuguese'
+  PORTUGUESE = 'Portuguese',
+  ARABIC = 'Arabic',
+  RUSSIAN = 'Russian',
+  HINDI = 'Hindi'
 }
 
 export enum ConnectionState {

@@ -3,7 +3,7 @@ import { Language, ConnectionState } from './types';
 import { LiveSessionService } from './services/liveSession';
 import Visualizer from './components/Visualizer';
 import LanguageSelector from './components/LanguageSelector';
-import { Mic, MicOff, PhoneOff, Settings, Sparkles, Globe2, BrainCircuit } from 'lucide-react';
+import { Mic, PhoneOff, Sparkles, Globe2, BrainCircuit } from 'lucide-react';
 
 // Pre-defined difficulty levels
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'];
@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [targetLanguage, setTargetLanguage] = useState<Language>(Language.SPANISH);
   const [difficulty, setDifficulty] = useState<string>('Intermediate');
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
-  const [audioLevel, setAudioLevel] = useState<number>(0);
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Ref to hold the service instance to avoid recreation on re-renders
@@ -22,7 +22,7 @@ const App: React.FC = () => {
     // Initialize service
     sessionService.current = new LiveSessionService({
       onStateChange: setConnectionState,
-      onAudioLevel: setAudioLevel,
+      onAnalyzerReady: setAnalyserNode,
       onError: (err) => setError(err)
     });
 
@@ -49,13 +49,6 @@ const App: React.FC = () => {
 
   const handleLanguageChange = (lang: Language) => {
     setTargetLanguage(lang);
-    // If connected, we assume the user will ask to switch, 
-    // but if we wanted to force a restart with new prompt we could:
-    if (connectionState === ConnectionState.CONNECTED) {
-       // Optional: Auto-restart to apply new system prompt strictly? 
-       // For this demo, we let the UI update and rely on "Just Ask" or manual restart.
-       // UX decision: Let's prompt user to restart for best results or just speak.
-    }
   };
 
   const isSessionActive = connectionState === ConnectionState.CONNECTED || connectionState === ConnectionState.CONNECTING;
@@ -98,7 +91,7 @@ const App: React.FC = () => {
           {/* Visualizer Area */}
           <div className="relative w-full aspect-video bg-white rounded-3xl shadow-xl shadow-indigo-100/50 flex items-center justify-center border border-white/50 overflow-hidden ring-1 ring-slate-100">
             {connectionState === ConnectionState.CONNECTED ? (
-               <Visualizer level={audioLevel} isActive={true} />
+               <Visualizer analyser={analyserNode} isActive={true} />
             ) : (
               <div className="text-center p-8">
                  <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -113,7 +106,7 @@ const App: React.FC = () => {
           {/* Controls */}
           <div className="w-full space-y-4">
             
-            {/* Settings (Disabled while connected for simplicity, or allowed for hot-swapping display) */}
+            {/* Settings */}
             <div className={`grid grid-cols-2 gap-4 transition-opacity duration-300 ${isSessionActive ? 'opacity-80 pointer-events-none' : 'opacity-100'}`}>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">I want to learn</label>

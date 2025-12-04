@@ -4,7 +4,7 @@ import { base64ToBytes, createPcmBlob, decodeAudioData } from "../utils/audioUti
 
 interface LiveSessionCallbacks {
   onStateChange: (state: ConnectionState) => void;
-  onAudioLevel: (level: number) => void;
+  onAnalyzerReady: (analyzer: AnalyserNode | null) => void;
   onError: (error: string) => void;
 }
 
@@ -46,10 +46,15 @@ export class LiveSessionService {
       
       // 2. Setup Audio Graph (Analyzer for visuals)
       this.analyzer = this.outputAudioContext.createAnalyser();
-      this.analyzer.fftSize = 256;
+      this.analyzer.fftSize = 512; // Higher resolution for spectrum
+      this.analyzer.smoothingTimeConstant = 0.5;
+      
       this.outputNode = this.outputAudioContext.createGain();
       this.outputNode.connect(this.analyzer);
       this.analyzer.connect(this.outputAudioContext.destination);
+
+      // Notify App that analyzer is ready for visualization
+      this.callbacks.onAnalyzerReady(this.analyzer);
 
       // 3. Get Microphone Stream
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -72,7 +77,7 @@ export class LiveSessionService {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }, // Friendly voice
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } },
           },
           systemInstruction: systemInstruction,
         },
@@ -80,7 +85,6 @@ export class LiveSessionService {
           onopen: () => {
             this.updateState(ConnectionState.CONNECTED);
             this.startAudioInput(stream);
-            this.startAnalysisLoop();
           },
           onmessage: (msg: LiveServerMessage) => this.handleMessage(msg),
           onclose: () => this.disconnect(),
@@ -162,30 +166,11 @@ export class LiveSessionService {
     this.audioSources.clear();
   }
 
-  private startAnalysisLoop() {
-    const update = () => {
-      if (this.connectionState !== ConnectionState.CONNECTED || !this.analyzer) return;
-      
-      const dataArray = new Uint8Array(this.analyzer.frequencyBinCount);
-      this.analyzer.getByteFrequencyData(dataArray);
-      
-      // Calculate average volume
-      let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
-      }
-      const average = sum / dataArray.length;
-      
-      this.callbacks.onAudioLevel(average);
-      requestAnimationFrame(update);
-    };
-    update();
-  }
-
   public disconnect() {
     if (this.connectionState === ConnectionState.DISCONNECTED) return;
 
     this.stopAllAudio();
+    this.callbacks.onAnalyzerReady(null);
 
     if (this.processor) {
       this.processor.disconnect();
@@ -195,15 +180,7 @@ export class LiveSessionService {
     if (this.inputAudioContext) this.inputAudioContext.close();
     if (this.outputAudioContext) this.outputAudioContext.close();
     
-    // There is no explicit "close" on the session object in the simple example, 
-    // but we can release the promise and contexts. 
-    // If the API supported it, we would call session.close().
-    // Assuming the session closes when the client cuts the stream or handles it gracefully.
-    // The live.connect returns a promise that resolves to a session with interaction methods.
-    // It's good practice to try to close it if the object allows, but here we just cleanup local resources.
-    
     this.updateState(ConnectionState.DISCONNECTED);
-    this.callbacks.onAudioLevel(0);
   }
 
   private updateState(state: ConnectionState) {
