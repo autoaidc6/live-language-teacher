@@ -3,7 +3,7 @@ import { Language, ConnectionState } from './types';
 import { LiveSessionService } from './services/liveSession';
 import Visualizer from './components/Visualizer';
 import LanguageSelector from './components/LanguageSelector';
-import { Mic, PhoneOff, Sparkles, Globe2, BrainCircuit } from 'lucide-react';
+import { Mic, PhoneOff, Sparkles, Globe2, Loader2, Volume2, Settings2 } from 'lucide-react';
 
 // Pre-defined difficulty levels
 const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'];
@@ -47,161 +47,167 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLanguageChange = (lang: Language) => {
-    setTargetLanguage(lang);
-  };
-
   const isSessionActive = connectionState === ConnectionState.CONNECTED || connectionState === ConnectionState.CONNECTING;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
       
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="bg-indigo-600 p-2 rounded-lg">
-            <Globe2 className="text-white w-6 h-6" />
+      {/* Navbar */}
+      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl shadow-lg shadow-indigo-200">
+              <Globe2 className="text-white w-5 h-5" />
+            </div>
+            <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 tracking-tight">
+              LinguaFlow
+            </span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">LinguaFlow</h1>
+          <div className="flex items-center gap-3">
+             {connectionState === ConnectionState.CONNECTED && (
+               <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-100 animate-fade-in">
+                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                 Live
+               </div>
+             )}
+          </div>
         </div>
-        <div className="flex items-center gap-4 text-sm font-medium text-slate-500">
-          <span className={`flex items-center gap-2 px-3 py-1 rounded-full ${
-            connectionState === ConnectionState.CONNECTED ? 'bg-green-100 text-green-700' : 
-            connectionState === ConnectionState.CONNECTING ? 'bg-amber-100 text-amber-700' : 'bg-slate-100'
-          }`}>
-            <span className={`w-2 h-2 rounded-full ${
-              connectionState === ConnectionState.CONNECTED ? 'bg-green-500 animate-pulse' : 
-              connectionState === ConnectionState.CONNECTING ? 'bg-amber-500 animate-bounce' : 'bg-slate-400'
-            }`}></span>
-            {connectionState === ConnectionState.CONNECTED ? 'Live Session' : 
-             connectionState === ConnectionState.CONNECTING ? 'Connecting...' : 'Ready'}
-          </span>
-        </div>
-      </header>
+      </nav>
 
-      {/* Main Content */}
+      {/* Main Stage */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden">
         
-        {/* Decorative background elements */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-200 rounded-full blur-3xl opacity-20 -z-10 animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-200 rounded-full blur-3xl opacity-20 -z-10" style={{animationDelay: '1s'}}></div>
+        {/* Ambient Background */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-200/30 rounded-full blur-[100px] -z-10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-pink-200/30 rounded-full blur-[80px] -z-10 translate-x-20 translate-y-20" />
 
-        <div className="max-w-md w-full flex flex-col items-center gap-8">
+        <div className="w-full max-w-2xl flex flex-col items-center gap-12">
           
-          {/* Visualizer Area */}
-          <div className="relative w-full aspect-video bg-white rounded-3xl shadow-xl shadow-indigo-100/50 flex items-center justify-center border border-white/50 overflow-hidden ring-1 ring-slate-100">
-            {connectionState === ConnectionState.CONNECTED ? (
-               <Visualizer analyser={analyserNode} isActive={true} />
+          {/* Dynamic Hero Section */}
+          <div className="relative w-full">
+            {isSessionActive ? (
+              // Active Session UI: Mic + Spectrum
+              <div className="bg-white rounded-[2rem] shadow-2xl shadow-indigo-100 border border-slate-100 p-8 flex items-center gap-8 animate-in fade-in zoom-in duration-500">
+                {/* Gradient Mic Orb */}
+                <div className="relative flex-shrink-0">
+                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur animate-pulse opacity-50"></div>
+                   <div className="relative w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-inner border-[3px] border-white/20">
+                      <Mic className="w-10 h-10 text-white" />
+                   </div>
+                </div>
+
+                {/* Spectrum Visualizer */}
+                <div className="flex-1 h-24 bg-slate-50/50 rounded-2xl overflow-hidden relative">
+                   {connectionState === ConnectionState.CONNECTING && (
+                     <div className="absolute inset-0 flex items-center justify-center z-10 text-slate-400 bg-slate-50/80 backdrop-blur-sm">
+                       <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                       Connecting...
+                     </div>
+                   )}
+                   <Visualizer analyser={analyserNode} isActive={connectionState === ConnectionState.CONNECTED} />
+                </div>
+              </div>
             ) : (
-              <div className="text-center p-8">
-                 <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="w-10 h-10 text-indigo-500" />
+              // Inactive State: Welcoming UI
+              <div className="text-center space-y-6 py-12">
+                 <div className="inline-flex items-center justify-center p-1 rounded-full bg-slate-100 mb-4">
+                   <span className="px-4 py-1.5 rounded-full bg-white shadow-sm text-sm font-medium text-slate-600 flex items-center gap-2">
+                     <Sparkles className="w-4 h-4 text-amber-400" />
+                     AI Language Coach
+                   </span>
                  </div>
-                 <h2 className="text-xl font-semibold text-slate-800 mb-2">Start your practice</h2>
-                 <p className="text-slate-500">Select a language and connect to your AI coach.</p>
+                 <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
+                   Master <span className="text-indigo-600">fluency</span> with <br/>real-time conversation.
+                 </h1>
+                 <p className="text-lg text-slate-500 max-w-lg mx-auto leading-relaxed">
+                   Choose a language, set your level, and start talking. Your AI tutor adapts instantly to your pace.
+                 </p>
               </div>
             )}
           </div>
 
-          {/* Controls */}
-          <div className="w-full space-y-4">
+          {/* Controls Container */}
+          <div className="w-full max-w-md bg-white/60 backdrop-blur-sm border border-white/50 shadow-xl shadow-slate-200/50 rounded-3xl p-6 transition-all duration-300">
             
-            {/* Settings */}
-            <div className={`grid grid-cols-2 gap-4 transition-opacity duration-300 ${isSessionActive ? 'opacity-80 pointer-events-none' : 'opacity-100'}`}>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">I want to learn</label>
-                <LanguageSelector selected={targetLanguage} onChange={handleLanguageChange} disabled={isSessionActive} />
+            {/* Configuration Options */}
+            <div className={`space-y-6 transition-all duration-500 ${isSessionActive ? 'opacity-50 pointer-events-none grayscale-[0.5] scale-[0.98]' : 'opacity-100'}`}>
+              <div className="space-y-4">
+                 <div className="flex items-center justify-between">
+                   <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                     <Globe2 className="w-4 h-4 text-slate-400" />
+                     Target Language
+                   </label>
+                 </div>
+                 <LanguageSelector selected={targetLanguage} onChange={setTargetLanguage} disabled={isSessionActive} />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Level</label>
-                <div className="relative">
-                  <select 
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value)}
-                    disabled={isSessionActive}
-                    className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 shadow-sm font-medium"
-                  >
-                    {DIFFICULTIES.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                    <ChevronDownIcon size={18} />
-                  </div>
-                </div>
+
+              <div className="space-y-4">
+                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                   <Settings2 className="w-4 h-4 text-slate-400" />
+                   Proficiency Level
+                 </label>
+                 <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
+                   {DIFFICULTIES.map((level) => (
+                     <button
+                       key={level}
+                       onClick={() => setDifficulty(level)}
+                       disabled={isSessionActive}
+                       className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                         difficulty === level 
+                           ? 'bg-white text-indigo-600 shadow-sm' 
+                           : 'text-slate-500 hover:text-slate-700'
+                       }`}
+                     >
+                       {level}
+                     </button>
+                   ))}
+                 </div>
               </div>
             </div>
 
-            {/* Error Message */}
+            {/* Error Display */}
             {error && (
-              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm border border-red-100 flex items-center gap-2">
-                 <span className="block w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+              <div className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100 flex items-start gap-3 animate-pulse">
+                 <div className="mt-0.5 w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
                  {error}
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="pt-4">
+            {/* Primary Action Button */}
+            <div className="mt-8">
               {!isSessionActive ? (
                 <button
                   onClick={handleStart}
-                  className="w-full group relative flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/25 active:scale-[0.98]"
+                  className="w-full group relative overflow-hidden bg-slate-900 hover:bg-slate-800 text-white font-semibold py-4 px-8 rounded-2xl transition-all shadow-lg hover:shadow-slate-500/25 active:scale-[0.99] flex items-center justify-center gap-3"
                 >
-                  <Mic className="w-6 h-6" />
-                  <span className="text-lg">Start Conversation</span>
-                  <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Sparkles className="w-5 h-5 text-indigo-300" />
-                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity" />
+                  <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span className="text-lg">Start Practice Session</span>
                 </button>
               ) : (
-                <div className="flex items-center gap-3">
-                   <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-3 flex items-center justify-center gap-2 text-slate-600 shadow-sm">
-                      <BrainCircuit className="w-5 h-5 text-indigo-500" />
-                      <span className="text-sm font-medium">AI is listening...</span>
-                   </div>
-                   <button
-                    onClick={handleStop}
-                    className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 p-4 rounded-2xl transition-colors active:scale-95"
-                    title="End Session"
-                  >
-                    <PhoneOff className="w-6 h-6" />
-                  </button>
-                </div>
+                <button
+                  onClick={handleStop}
+                  className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-medium py-4 px-8 rounded-2xl transition-colors border border-red-100 flex items-center justify-center gap-3"
+                >
+                  <PhoneOff className="w-5 h-5" />
+                  End Session
+                </button>
               )}
             </div>
-
-            {/* Tips */}
+            
+            {/* Contextual Hint */}
             {isSessionActive && (
-              <div className="text-center animate-fade-in">
-                <p className="text-sm text-slate-400 bg-slate-50 inline-block px-3 py-1 rounded-full border border-slate-100">
-                  Tip: Say <span className="text-indigo-500 font-medium">"Switch to English"</span> or any language to change instantly.
+              <div className="mt-4 text-center animate-in slide-in-from-bottom-2 fade-in">
+                <p className="text-xs text-slate-400 font-medium">
+                  Try saying: <span className="text-indigo-500">"Switch to English"</span> to pause practice.
                 </p>
               </div>
             )}
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="py-6 text-center text-slate-400 text-xs">
-        <p>Powered by Gemini Live API • {new Date().getFullYear()}</p>
-      </footer>
     </div>
   );
 };
-
-// Simple Chevron Icon Component for the select inputs
-const ChevronDownIcon = ({ size = 24 }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-  >
-    <path d="m6 9 6 6 6-6"/>
-  </svg>
-);
 
 export default App;
