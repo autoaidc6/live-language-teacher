@@ -1,6 +1,6 @@
 import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
 import { ConnectionState, Language } from "../types";
-import { base64ToBytes, createPcmBlob, decodeAudioData } from "../utils/audioUtils";
+import { base64ToBytes, createPcmBlob, decodeAudioData, downsampleBuffer } from "../utils/audioUtils";
 
 interface LiveSessionCallbacks {
   onStateChange: (state: ConnectionState) => void;
@@ -41,12 +41,22 @@ export class LiveSessionService {
 
     try {
       // 1. Setup Audio Contexts
-      this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      // NOTE: We do not specify sampleRate here to allow the browser to use its native hardware rate (essential for iOS compatibility).
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      this.inputAudioContext = new AudioContextClass();
+      this.outputAudioContext = new AudioContextClass({ sampleRate: 24000 }); // Output usually supports 24k, if not we can adapt.
       
+      // Resume contexts immediately (required for Safari/iOS)
+      if (this.inputAudioContext.state === 'suspended') {
+        await this.inputAudioContext.resume();
+      }
+      if (this.outputAudioContext.state === 'suspended') {
+        await this.outputAudioContext.resume();
+      }
+
       // 2. Setup Audio Graph (Analyzer for visuals)
       this.analyzer = this.outputAudioContext.createAnalyser();
-      this.analyzer.fftSize = 512; // Higher resolution for spectrum
+      this.analyzer.fftSize = 512;
       this.analyzer.smoothingTimeConstant = 0.5;
       
       this.outputNode = this.outputAudioContext.createGain();
@@ -97,6 +107,7 @@ export class LiveSessionService {
       });
 
     } catch (error: any) {
+      console.error("Connection failed:", error);
       this.callbacks.onError(error.message);
       this.updateState(ConnectionState.ERROR);
     }
@@ -110,7 +121,12 @@ export class LiveSessionService {
 
     this.processor.onaudioprocess = (e) => {
       const inputData = e.inputBuffer.getChannelData(0);
-      const pcmBlob = createPcmBlob(inputData);
+      
+      // Downsample to 16000Hz if necessary (common on mobile where native rate is 44.1k/48k)
+      const currentSampleRate = this.inputAudioContext?.sampleRate || 16000;
+      const downsampledData = downsampleBuffer(inputData, currentSampleRate, 16000);
+      
+      const pcmBlob = createPcmBlob(downsampledData);
       
       if (this.currentSessionPromise) {
         this.currentSessionPromise.then(session => {
@@ -128,26 +144,30 @@ export class LiveSessionService {
     const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
     
     if (base64Audio && this.outputAudioContext && this.outputNode) {
-      const audioBuffer = await decodeAudioData(
-        base64ToBytes(base64Audio),
-        this.outputAudioContext,
-        24000,
-        1
-      );
+      try {
+        const audioBuffer = await decodeAudioData(
+          base64ToBytes(base64Audio),
+          this.outputAudioContext,
+          24000,
+          1
+        );
 
-      this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
-      
-      const source = this.outputAudioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.outputNode); // Connect to output node (which goes to analyzer -> dest)
-      
-      source.addEventListener('ended', () => {
-        this.audioSources.delete(source);
-      });
+        this.nextStartTime = Math.max(this.nextStartTime, this.outputAudioContext.currentTime);
+        
+        const source = this.outputAudioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(this.outputNode); // Connect to output node (which goes to analyzer -> dest)
+        
+        source.addEventListener('ended', () => {
+          this.audioSources.delete(source);
+        });
 
-      source.start(this.nextStartTime);
-      this.nextStartTime += audioBuffer.duration;
-      this.audioSources.add(source);
+        source.start(this.nextStartTime);
+        this.nextStartTime += audioBuffer.duration;
+        this.audioSources.add(source);
+      } catch (e) {
+        console.error("Error decoding audio:", e);
+      }
     }
 
     // Handle Interruption
@@ -177,6 +197,8 @@ export class LiveSessionService {
       this.processor.onaudioprocess = null;
     }
     if (this.inputSource) this.inputSource.disconnect();
+    
+    // Close contexts to release hardware resources
     if (this.inputAudioContext) this.inputAudioContext.close();
     if (this.outputAudioContext) this.outputAudioContext.close();
     

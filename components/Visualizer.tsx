@@ -39,6 +39,23 @@ const Visualizer: React.FC<VisualizerProps> = ({
     const bufferLength = analyser ? analyser.frequencyBinCount : 0;
     const dataArray = new Uint8Array(bufferLength);
 
+    // Helper to draw rounded rects manually for cross-browser compatibility
+    const drawRoundedRect = (x: number, y: number, w: number, h: number, radius: number) => {
+      const r = Math.min(radius, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.fill();
+    };
+
     const render = () => {
       const width = rect.width;
       const height = rect.height;
@@ -47,13 +64,12 @@ const Visualizer: React.FC<VisualizerProps> = ({
       ctx.clearRect(0, 0, width, height);
 
       if (!isActive || !analyser) {
-        return; // Render nothing if not active (controlled by parent now)
+        return; 
       }
 
       // Get real frequency data
       analyser.getByteFrequencyData(dataArray);
 
-      // Config for a "Voice Memo" style wave
       const bars = 60; 
       const step = Math.floor(bufferLength / bars);
       const barWidth = (width / bars) * 0.6; // Thin bars with space
@@ -76,13 +92,8 @@ const Visualizer: React.FC<VisualizerProps> = ({
         const x = i * (barWidth + gap) + (gap / 2);
         const y = centerY - (barHeight / 2);
         
-        ctx.beginPath();
-        if (typeof ctx.roundRect === 'function') {
-          ctx.roundRect(x, y, barWidth, barHeight, 50); // Fully rounded caps
-        } else {
-          ctx.rect(x, y, barWidth, barHeight);
-        }
-        ctx.fill();
+        // Use manual drawing instead of roundRect for compatibility
+        drawRoundedRect(x, y, barWidth, barHeight, 50);
       }
 
       animationFrameId = requestAnimationFrame(render);
