@@ -84,7 +84,7 @@ const App: React.FC = () => {
               <Globe2 className="text-white w-5 h-5" />
             </div>
             <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 tracking-tight">
-              LinguaFlow
+              Livelingo
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -280,7 +280,7 @@ const App: React.FC = () => {
               
               <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
                 <p className="text-xs text-center text-slate-400 dark:text-slate-500">
-                  LinguaFlow v1.0.0
+                  Livelingo v1.0.0
                 </p>
               </div>
             </div>

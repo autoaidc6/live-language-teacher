@@ -8,7 +8,7 @@
 <path d="M600 425V465" stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M540 465H660" stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
-<text x="600" y="560" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="72" text-anchor="middle" fill="white" letter-spacing="4">LinguaFlow</text>
+<text x="600" y="560" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="72" text-anchor="middle" fill="white" letter-spacing="4">Livelingo</text>
 <defs>
 <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 315) rotate(90) scale(450)">
 <stop stop-color="#6366F1" stop-opacity="0.2"/>
